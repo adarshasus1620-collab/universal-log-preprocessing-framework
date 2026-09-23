@@ -15,6 +15,8 @@ from collections import Counter
 from html import escape
 
 import streamlit as st
+import json
+from pathlib import Path
 
 st.set_page_config(page_title="ULPF - Universal Log Pre-processing Framework",
                    page_icon=":satellite:", layout="wide")
@@ -147,7 +149,35 @@ st.info("Prototype UI with sample data. The parsing engine is under development.
 # ---------------------------------------------------------------------------
 # Sample data: raw line (copied from sample_logs) + hand-normalized fields
 # ---------------------------------------------------------------------------
-EVENTS = [
+DATA_PATH = Path(__file__).resolve().parent / "output" / "events.jsonl"
+
+
+def load_events() -> list[dict]:
+    """Load normalized events produced by cli.py. Falls back to a small
+    built-in sample if the pipeline has not been run yet, so the demo
+    never shows an empty screen."""
+    if DATA_PATH.exists():
+        lines = [ln for ln in DATA_PATH.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        if lines:
+            events = []
+            for ln in lines:
+                rec = json.loads(ln)
+                src, dst, meta = rec.get("src", {}), rec.get("dst", {}), rec["metadata"]
+                events.append(dict(
+                    vendor=meta["vendor"], product=meta["product"],
+                    file=meta["raw_ref"].split(":")[0], line=int(meta["raw_ref"].split(":")[1]),
+                    raw=None, time=rec["time"], cls=rec["class"], activity=rec["activity"],
+                    action=rec["action"], severity=rec["severity"],
+                    src_ip=src.get("ip"), src_port=src.get("port"),
+                    dst_ip=dst.get("ip"), dst_port=dst.get("port"),
+                    proto=rec.get("protocol"), user=rec.get("user"), message=rec["message"],
+                    ext=rec.get("extensions", {}), raw_sha256=meta["raw_sha256"],
+                ))
+            return events
+    return SAMPLE_EVENTS
+
+
+SAMPLE_EVENTS = [
     dict(
         vendor="Fortinet", product="FortiGate", file="fortinet.log", line=1,
         raw='''date=2026-09-19 time=10:15:32 devname="FGT-HQ" logid="0000000013" type="traffic" subtype="forward" level="notice" srcip=10.1.1.5 srcport=51234 dstip=8.8.8.8 dstport=443 proto=6 action="accept" policyid=12 service="HTTPS" sentbyte=1200 rcvdbyte=5400''',
@@ -226,13 +256,14 @@ EVENTS = [
 def sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
+EVENTS = load_events()
 
 # Derived fields: event id, raw hash, and a hash chain over the raw events
 _prev = "0" * 64
 for i, e in enumerate(EVENTS):
     e["event_id"] = f"evt-{i + 1:04d}"
     e["raw_ref"] = f"{e['file']}:{e['line']}"
-    e["raw_sha256"] = sha256(e["raw"])
+    e["raw_sha256"] = e.get("raw_sha256") or sha256(e["raw"])
     _prev = sha256(_prev + e["raw_sha256"])
     e["chain_hash"] = _prev
 
@@ -412,7 +443,7 @@ with tab_trace:
         st.markdown("**Original raw event**")
         if st.button("Reset raw text", key=f"reset_{chosen}"):
             st.session_state.pop(key, None)
-        edited = st.text_area("Raw text (editable for the tamper test)", value=ev["raw"],
+        edited = st.text_area("Raw text (editable for the tamper test)", value=ev["raw"] or "",
                               height=170, key=key, label_visibility="collapsed")
 
         st.markdown("**Integrity check**")

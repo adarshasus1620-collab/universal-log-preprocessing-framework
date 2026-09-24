@@ -80,7 +80,7 @@ Then open http://localhost:8501 in a browser.
 
 ```
 app.py                   Streamlit demo UI
-sample_logs/             Sample Fortinet, Cisco ASA and Suricata logs (pfsense.log is a placeholder)
+sample_logs/             Sample logs for Fortinet, Cisco ASA, Suricata and pfSense
 parsers/                 Reserved for YAML parser packs (planned)
 ulpf/                    Reserved for the processing engine (planned)
 output/                  Reserved for pipeline output (planned)
@@ -92,7 +92,7 @@ output/                  Reserved for pipeline output (planned)
 - [x] Demo UI with tamper-evident raw-to-normalized tracing
 - [x] Sample logs for three sources
 - [ ] Unified schema (Pydantic)
-- [ ] Parsers for Fortinet, Cisco ASA, Suricata and pfSense
+- [x] Parsers for Fortinet, Cisco ASA, Suricata and pfSense
 - [ ] Format auto-detection
 - [ ] YAML parser packs for plug-and-play onboarding
 - [ ] Raw vault with SHA-256 trace IDs and hash chain

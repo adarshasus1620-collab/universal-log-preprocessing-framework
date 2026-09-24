@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from detect import detect_source
+from vault import store_raw_event
 from parse import parse_fortinet_line
 from parse_cisco import parse_cisco_asa_line
 from parse_suricata import parse_suricata_line
@@ -29,6 +30,7 @@ def process_file(path: Path):
     for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if not line.strip():
             continue
+        store_raw_event(line, path.name, i)
         parser = PARSERS.get(detect_source(line))
         if parser is None:
             errors.append((path.name, i, "unknown format", line[:80]))

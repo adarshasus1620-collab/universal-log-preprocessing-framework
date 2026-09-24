@@ -17,11 +17,13 @@ from vault import store_raw_event
 from parse import parse_fortinet_line
 from parse_cisco import parse_cisco_asa_line
 from parse_suricata import parse_suricata_line
+from parse_pfsense import parse_pfsense_line
 
 PARSERS = {
     "fortinet": parse_fortinet_line,
     "cisco_asa": parse_cisco_asa_line,
     "suricata": parse_suricata_line,
+    "pfsense": parse_pfsense_line,
 }
 
 

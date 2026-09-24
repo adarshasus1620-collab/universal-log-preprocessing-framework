@@ -22,6 +22,9 @@ def detect_source(raw_line: str) -> str:
 
     if "%ASA-" in stripped:
         return "cisco_asa"
+    
+    if "pfSense filterlog[" in stripped:
+        return "pfsense"
 
     if "devname=" in stripped and "logid=" in stripped:
         return "fortinet"
@@ -34,6 +37,7 @@ if __name__ == "__main__":
         "fortinet": 'date=2026-09-19 time=10:15:32 devname="FGT-HQ" logid="0000000013" type="traffic"',
         "cisco_asa": "Sep 19 2026 10:15:32 ASA01 : %ASA-6-302013: Built outbound TCP connection",
         "suricata": '{"timestamp":"2026-09-19T10:17:05Z","event_type":"alert","src_ip":"198.51.100.7"}',
+        "pfsense": "Sep 19 10:18:11 pfSense filterlog[12345]: 5,,,1000000103,em0,match,block,in",
         "garbage": "this line matches nothing we know about",
     }
     for expected, line in samples.items():

@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 VAULT_PATH = Path(__file__).resolve().parent.parent / "output" / "vault.jsonl"
+TEST_VAULT_PATH = Path(__file__).resolve().parent.parent / "output" / "vault_selftest.jsonl"
 GENESIS_HASH = "0" * 64
 
 
@@ -79,21 +80,44 @@ def verify_chain() -> tuple[bool, str]:
 
 
 if __name__ == "__main__":
-    # Self-test: reset, store 3 fake events, verify, then tamper and verify again.
-    if VAULT_PATH.exists():
-        VAULT_PATH.unlink()
+    # Self-test: uses a SEPARATE file, so it never touches the real vault.
+    if TEST_VAULT_PATH.exists():
+        TEST_VAULT_PATH.unlink()
 
-    store_raw_event("first test line", "test.log", 1)
-    store_raw_event("second test line", "test.log", 2)
-    store_raw_event("third test line", "test.log", 3)
+    def _store(raw, f, n):
+        rec_prev = _last_chain_hash() if not TEST_VAULT_PATH.exists() else json.loads(
+            TEST_VAULT_PATH.read_text(encoding="utf-8").splitlines()[-1])["chain_hash"]
+        raw_sha = sha256(raw)
+        chain = sha256(rec_prev + raw_sha)
+        rec = {"trace_id": f"{f}:{n}:{raw_sha[:12]}", "source_file": f, "source_line": n,
+               "raw": raw, "raw_sha256": raw_sha, "prev_chain_hash": rec_prev, "chain_hash": chain}
+        with TEST_VAULT_PATH.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(rec) + "\n")
 
-    ok, msg = verify_chain()
+    _store("first test line", "test.log", 1)
+    _store("second test line", "test.log", 2)
+    _store("third test line", "test.log", 3)
+
+    def _verify():
+        records = [json.loads(l) for l in TEST_VAULT_PATH.read_text(encoding="utf-8").splitlines() if l.strip()]
+        prev = GENESIS_HASH
+        for i, r in enumerate(records, start=1):
+            if sha256(r["raw"]) != r["raw_sha256"]:
+                return False, f"Entry {i} ({r['trace_id']}): raw text does not match its stored hash."
+            if sha256(prev + r["raw_sha256"]) != r["chain_hash"]:
+                return False, f"Entry {i} ({r['trace_id']}): chain is broken here."
+            prev = r["chain_hash"]
+        return True, f"All {len(records)} vault entries verified. Chain is intact."
+
+    ok, msg = _verify()
     print(f"Before tampering: {ok} | {msg}")
 
-    # Simulate tampering: change one character in entry 2, leave the hash as-is.
-    records = load_vault()
+    records = [json.loads(l) for l in TEST_VAULT_PATH.read_text(encoding="utf-8").splitlines() if l.strip()]
     records[1]["raw"] = "second test LINE (tampered)"
-    VAULT_PATH.write_text("\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8")
+    TEST_VAULT_PATH.write_text("\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8")
 
-    ok, msg = verify_chain()
+    ok, msg = _verify()
     print(f"After tampering:  {ok} | {msg}")
+
+    if TEST_VAULT_PATH.exists():
+        TEST_VAULT_PATH.unlink()

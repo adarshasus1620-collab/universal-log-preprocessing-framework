@@ -17,6 +17,7 @@ from html import escape
 import streamlit as st
 import json
 from pathlib import Path
+from ulpf.vault import load_vault
 
 st.set_page_config(page_title="ULPF - Universal Log Pre-processing Framework",
                    page_icon=":satellite:", layout="wide")
@@ -153,12 +154,17 @@ DATA_PATH = Path(__file__).resolve().parent / "output" / "events.jsonl"
 
 
 def load_events() -> list[dict]:
-    """Load normalized events produced by cli.py. Falls back to a small
+    """Load normalized events produced by cli.py, and fill in each event's
+    raw line from the vault (matched by file:line). Falls back to a small
     built-in sample if the pipeline has not been run yet, so the demo
     never shows an empty screen."""
     if DATA_PATH.exists():
         lines = [ln for ln in DATA_PATH.read_text(encoding="utf-8").splitlines() if ln.strip()]
         if lines:
+            raw_by_ref = {}
+            for v in load_vault():
+                raw_by_ref[f"{v['source_file']}:{v['source_line']}"] = v["raw"]
+
             events = []
             for ln in lines:
                 rec = json.loads(ln)
@@ -166,8 +172,8 @@ def load_events() -> list[dict]:
                 events.append(dict(
                     vendor=meta["vendor"], product=meta["product"],
                     file=meta["raw_ref"].split(":")[0], line=int(meta["raw_ref"].split(":")[1]),
-                    raw=None, time=rec["time"], cls=rec["class"], activity=rec["activity"],
-                    action=rec["action"], severity=rec["severity"],
+                    raw=raw_by_ref.get(meta["raw_ref"]), time=rec["time"], cls=rec["class"],
+                    activity=rec["activity"], action=rec["action"], severity=rec["severity"],
                     src_ip=src.get("ip"), src_port=src.get("port"),
                     dst_ip=dst.get("ip"), dst_port=dst.get("port"),
                     proto=rec.get("protocol"), user=rec.get("user"), message=rec["message"],

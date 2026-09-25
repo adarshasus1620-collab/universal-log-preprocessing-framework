@@ -1,0 +1,15 @@
+source: acme_firewall
+vendor: Acme
+product: Acme Firewall
+detect:
+  contains: ["host=", "act="]
+format: key_value
+map:
+  time: "{ts}"
+  src.ip: srcip
+  src.port: srcport
+  dst.ip: dstip
+  dst.port: dstport
+  action:
+    permit: allowed
+    drop: blocked

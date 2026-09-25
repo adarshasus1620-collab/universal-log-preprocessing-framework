@@ -1,0 +1,2 @@
+ts=2026-09-19T11:00:00Z host="ACME-GW1" srcip=172.16.0.5 srcport=5001 dstip=203.0.113.99 dstport=443 act="permit"
+ts=2026-09-19T11:00:05Z host="ACME-GW1" srcip=45.33.12.9 srcport=6002 dstip=172.16.0.10 dstport=3389 act="drop"

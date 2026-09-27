@@ -1,0 +1,15 @@
+source: fortinet_fortigate
+vendor: Fortinet
+product: FortiGate
+detect:
+  contains: ["devname=", "logid="]
+format: key_value
+map:
+  time: "{date}T{time}Z"
+  src.ip: srcip
+  src.port: srcport
+  dst.ip: dstip
+  dst.port: dstport
+  action:
+    accept: allowed
+    deny: blocked

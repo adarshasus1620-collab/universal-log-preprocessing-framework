@@ -18,6 +18,9 @@ import streamlit as st
 import json
 from pathlib import Path
 from ulpf.vault import load_vault
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent / "ulpf"))
+from yaml_parser import load_parser_packs
 
 st.set_page_config(page_title="ULPF - Universal Log Pre-processing Framework",
                    page_icon=":satellite:", layout="wide")
@@ -473,22 +476,42 @@ with tab_trace:
 with tab_packs:
     st.subheader("Adding a new source means adding a file")
     st.write("Each source is described by a small YAML parser pack, not by new code. "
-             "This is the planned format, shown as an example.")
-    st.code('''source: fortinet_fortigate
-version: 1
-detect:
-  contains: ["devname=", "logid="]
-format: key_value
-map:
-  time: "{date}T{time}Z"
-  src.ip: srcip
-  src.port: srcport
-  dst.ip: dstip
-  dst.port: dstport
-  action:
-    accept: allowed
-    deny: blocked
-unmapped: extensions      # nothing is dropped''', language="yaml")
+             "No Python is written to add a vendor: a pack declares how to detect the "
+             "format and map its fields.")
+
+    parsers_dir = Path(__file__).resolve().parent / "parsers"
+    packs = load_parser_packs(parsers_dir)
+
+    if not packs:
+        st.warning("No parser packs found in the parsers/ folder yet.")
+    else:
+        names = {p.source_name: p for p in packs}
+        chosen_name = st.selectbox("Loaded parser packs", list(names))
+        pack = names[chosen_name]
+        yaml_text = (parsers_dir / f"{chosen_name}.yaml").read_text(encoding="utf-8")
+
+        left, right = st.columns(2)
+        with left:
+            st.markdown(f"**{chosen_name}.yaml**")
+            st.code(yaml_text, language="yaml")
+        with right:
+            st.markdown("**Live test: paste any raw log line**")
+            sample = st.text_area("Raw line to test against this pack", height=120,
+                                  label_visibility="collapsed",
+                                  placeholder="e.g. ts=2026-09-19T11:00:00Z host=\"ACME-GW1\" srcip=172.16.0.5 ...")
+            if sample.strip():
+                if pack.matches(sample):
+                    st.success(f"Detected as '{chosen_name}' \u2014 parsing now...")
+                    try:
+                        event = pack.parse(sample.strip(), "live_test.log", 1)
+                        st.json(event.model_dump(by_alias=True), expanded=2)
+                    except Exception as exc:
+                        st.error(f"Matched the detector, but parsing failed: {exc}")
+                else:
+                    st.warning(f"This line does not match the '{chosen_name}' pack's detection rule.")
+
+        st.caption(f"{len(packs)} parser pack(s) loaded from parsers/. Add a new vendor by dropping "
+                   "another .yaml file in that folder \u2014 no code changes needed.")
 
 st.divider()
 st.caption("Sample logs are simplified and illustrative, not captured from real devices. "

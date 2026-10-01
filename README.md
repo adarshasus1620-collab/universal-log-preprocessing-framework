@@ -13,8 +13,15 @@ Smart India Hackathon 2026 | Problem Statement 26156 | NTRO | Software | Blockch
 |---|---|
 | Team name | EthicalOne |
 | Team ID | [to be added] | 
-| Members | [Member 1], [Member 2], [Member 3] |
+| Members | [Adarsh], [Member 2], [Member 3] |
 | GitHub | [adarshasus1620-collab](https://github.com/adarshasus1620-collab) |
+
+## Demo Video
+
+2-minute walkthrough: the unified-schema concept, live tamper detection, zero-code
+vendor onboarding (YAML), and the containerized deployment.
+
+https://youtu.be/DYeA_UpjxIQ
 
 ## The problem
 

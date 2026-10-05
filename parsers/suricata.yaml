@@ -1,0 +1,23 @@
+source: suricata_eve
+vendor: Suricata
+product: IDS (EVE JSON)
+detect:
+  contains: ["event_type", "src_ip"]
+format: json
+alert_key: alert
+message_field: signature
+map:
+  time: timestamp
+  src.ip: src_ip
+  src.port: src_port
+  dst.ip: dest_ip
+  dst.port: dest_port
+  action:
+    allowed: allowed
+    blocked: blocked
+extensions:
+  - signature_id
+  - rev
+  - gid
+  - category
+  - severity

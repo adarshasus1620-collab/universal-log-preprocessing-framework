@@ -1,0 +1,20 @@
+source: pfsense_filterlog
+vendor: pfSense
+product: Firewall
+detect:
+  contains: ["pfSense filterlog["]
+format: csv_positional
+header:
+  regex: '^(?P<mon>\w+)\s+(?P<day>\d+)\s+(?P<time>[\d:]+)\s+pfSense\s+filterlog\[\d+\]:\s*(?P<csv>.*)$'
+columns:
+  action: 6
+  direction: 7
+  protocol: 16
+  src_ip: 18
+  dst_ip: 19
+  src_port: 20
+  dst_port: 21
+action:
+  pass: allowed
+  block: blocked
+  reject: blocked

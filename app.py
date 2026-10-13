@@ -488,11 +488,11 @@ with tab_packs:
         names = {p.source_name: p for p in packs}
         chosen_name = st.selectbox("Loaded parser packs", list(names))
         pack = names[chosen_name]
-        yaml_text = (parsers_dir / f"{chosen_name}.yaml").read_text(encoding="utf-8")
+        yaml_text = pack.pack_path.read_text(encoding="utf-8")
 
         left, right = st.columns(2)
         with left:
-            st.markdown(f"**{chosen_name}.yaml**")
+            st.markdown(f"**{pack.pack_path.name}**")
             st.code(yaml_text, language="yaml")
         with right:
             st.markdown("**Live test: paste any raw log line**")
